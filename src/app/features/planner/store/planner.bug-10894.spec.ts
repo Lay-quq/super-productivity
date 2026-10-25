@@ -16,6 +16,9 @@ describe('Planner Selectors - #10894 parent and sub task double-count', () => {
   const tomorrowDate = new Date();
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrow = getDbDateStr(tomorrowDate);
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = getDbDateStr(yesterdayDate);
   const MIN_20 = 20 * 60 * 1000;
 
   const createMockTask = (overrides: Partial<Task> & { id: string }): Task => {
@@ -180,6 +183,30 @@ describe('Planner Selectors - #10894 parent and sub task double-count', () => {
     const est = getDayEstimates(tasks, ['B'], { [tomorrow]: ['A'] });
 
     expect(est.today).toBe(15 * 60 * 1000);
+    expect(est.tomorrow).toBe(MIN_20);
+  });
+
+  // Overdue sub tasks are listed (and totalled) in the Overdue section, so the
+  // parent leaves them out whether they were scheduled by day or with a time.
+  it('an overdue sub task with a past day is not counted again by its parent', () => {
+    const tasks = createFamily({ dueDay: yesterday }, {}, { dueDay: tomorrow });
+
+    const est = getDayEstimates(tasks, [], { [tomorrow]: ['A'] });
+
+    expect(est.today).toBe(0);
+    expect(est.tomorrow).toBe(MIN_20);
+  });
+
+  it('an overdue sub task with a past time is not counted again by its parent', () => {
+    const dueWithTime = getDateTimeFromClockString(
+      '10:00',
+      dateStrToUtcDate(yesterday).getTime(),
+    );
+    const tasks = createFamily({ dueWithTime }, {}, { dueDay: tomorrow });
+
+    const est = getDayEstimates(tasks, [], { [tomorrow]: ['A'] });
+
+    expect(est.today).toBe(0);
     expect(est.tomorrow).toBe(MIN_20);
   });
 });

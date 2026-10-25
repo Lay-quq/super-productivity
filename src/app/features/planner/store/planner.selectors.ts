@@ -291,7 +291,8 @@ const getPlannerDay = (
 };
 
 // A sub task planned on its own is counted by itself: in this day's list, on
-// another upcoming planner day, on Today's list, or in its time slot. Planning
+// another upcoming planner day, on Today's list, in its time slot, or in the
+// Overdue section when its day or time has passed. Planning
 // a parent leaves its sub tasks on their other days (#9019) while the parent's
 // `timeEstimate` still includes them, so the parent must leave them out to
 // count each piece of work once. See #10894.
@@ -321,7 +322,9 @@ const getIsSubTaskCountedOnItsOwn = (
     return ids;
   };
   return (subTask) =>
-    !!subTask.dueWithTime || (countedIds ??= getCountedIds()).has(subTask.id);
+    !!subTask.dueWithTime ||
+    (!!subTask.dueDay && subTask.dueDay < todayStr) ||
+    (countedIds ??= getCountedIds()).has(subTask.id);
 };
 
 const getTimeLeftForPlannerTask = (
